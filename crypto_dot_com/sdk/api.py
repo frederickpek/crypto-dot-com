@@ -1,4 +1,4 @@
-from crypto_dot_com.consts import POST, USER_BALANCE, USER_BALANCE_HISTORY
+from crypto_dot_com.consts import POST, USER_BALANCE, USER_BALANCE_HISTORY, POSITIONS
 from crypto_dot_com.sdk.client import CdcClient
 
 
@@ -24,5 +24,12 @@ class CdcApi(CdcClient):
         if limit:
             params['limit'] = limit
         response = self.request(method=POST, endpoint=USER_BALANCE_HISTORY, params=params)
+        return response['result']['data']
+
+    def get_positions(self, instrument_name: str=None) -> list[dict]:
+        params = dict()
+        if instrument_name:
+            params['instrument_name'] = instrument_name
+        response = self.request(method=POST, endpoint=POSITIONS, params=params)
         return response['result']['data']
 
