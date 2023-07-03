@@ -38,3 +38,9 @@ plot = df.plot.line(x='t', y='c')
 
 
 # %%
+
+from snap_cdc_exch_balance.lambda_function import lambda_handler
+
+
+lambda_handler(None, None)
+# %%
