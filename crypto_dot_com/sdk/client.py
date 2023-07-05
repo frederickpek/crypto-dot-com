@@ -3,7 +3,7 @@ import hashlib
 import requests
 
 from crypto_dot_com.consts import GET, POST, BASE_URL
-from crypto_dot_com.utils import params_to_str, get_nonce, get_id
+from crypto_dot_com.utils import get_params_to_str, post_params_to_str, get_nonce, get_id
 
 
 class CdcClient:
@@ -22,7 +22,7 @@ class CdcClient:
         identifier = get_id()
         api_key = self.api_key
         nonce = get_nonce()
-        param_str = params_to_str(params)
+        param_str = post_params_to_str(params)
         payload_str = endpoint + str(identifier) + api_key + param_str + str(nonce)
         signature = self.get_signature(payload_str)
         return {
@@ -35,16 +35,17 @@ class CdcClient:
         }
 
     def request(self, method: str, endpoint: str, params: dict=None) -> dict:
-        params = params or {}
-        if method == GET:
-            raise NotImplementedError
-        elif method == POST:
-            body = self.get_post_payload_body(endpoint, params)
-            try:
-                resp = requests.post(BASE_URL + endpoint, json=body)
-            except Exception:
-                return dict()
-            return resp.json()
-        else:
+        if method not in (GET, POST):
             raise ValueError('Only GET and POST operations supported.')
+        try:
+            params = params or {}
+            if method == GET:
+                query_params = get_params_to_str(params)
+                resp = requests.get(BASE_URL + endpoint + '?' + query_params)
+            elif method == POST:
+                body = self.get_post_payload_body(endpoint, params)
+                resp = requests.post(BASE_URL + endpoint, json=body)
+        except Exception:
+            return dict()
+        return resp.json()
 
