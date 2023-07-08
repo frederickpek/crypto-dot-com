@@ -5,26 +5,30 @@ MAX_HEIGHT = 12
 
 
 def gen_ascii_plot(points: List[float]) -> str:
-    output = plot(series=points, cfg={
-        'height': MAX_HEIGHT,
-        'offset': 1,
-    })
-    x_axis = ''
+    output = plot(
+        series=points,
+        cfg={
+            "height": MAX_HEIGHT,
+            "offset": 1,
+        },
+    )
+    x_axis = ""
     interval = 6
     n = len(points)
     for i in range(1, n // interval + 1):
-        x_axis += '{: >{}}'.format(str(i * interval)[::-1], interval)
-    output += '\n' + '{: >{}}'.format(x_axis[::-1], n)
-    output += f'\nMin: ${min(points):,.2f}'
-    output += f'\nMax: ${max(points):,.2f}'
+        x_axis += "{: >{}}".format(str(i * interval)[::-1], interval)
+    output += "\n" + "{: >{}}".format(x_axis[::-1], n)
+    output += f"\nMin: ${min(points):,.2f}"
+    output += f"\nMax: ${max(points):,.2f}"
     return output
+
 
 def _gen_ascii_plot(points: List[float]) -> str:
     n = len(points)
     if n <= 1:
-        return ''
+        return ""
 
-    grid = [[' '] * n for _ in range(MAX_HEIGHT)]
+    grid = [[" "] * n for _ in range(MAX_HEIGHT)]
 
     max_value = max(points)
     min_value = min(points)
@@ -33,19 +37,19 @@ def _gen_ascii_plot(points: List[float]) -> str:
     def get_j(point):
         btm_up_i = -1
         curr_val = min_value - interval / 2
-        while (point > curr_val):
+        while point > curr_val:
             btm_up_i += 1
             curr_val += interval
         return MAX_HEIGHT - 1 - btm_up_i
 
     for i, point in enumerate(points):
         j = get_j(point)
-        grid[j][i] = '*'
+        grid[j][i] = "*"
 
-    output = f'^ ${max_value:,.2f}'
+    output = f"^ ${max_value:,.2f}"
     for row in grid:
-        output += '\n|' + ''.join(row)
-    output += f'\n| ${min_value:,.2f}'
-    output += '\n' + '-' * n + '>'
+        output += "\n|" + "".join(row)
+    output += f"\n| ${min_value:,.2f}"
+    output += "\n" + "-" * n + ">"
 
     return output

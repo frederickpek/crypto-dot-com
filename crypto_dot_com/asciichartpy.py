@@ -1,113 +1,37 @@
-# -*- coding: utf-8 -*-
-"""Module to generate ascii charts.
-
-This module provides a single function `plot` that can be used to generate an
-ascii chart from a series of numbers. The chart can be configured via several
-options to tune the output.
-"""
-
 from __future__ import division
 from math import ceil, floor, isnan
 
-__all__ = ['plot']
+__all__ = ["plot"]
 
-# Python 3.2 has math.isfinite, which could have been used, but to support older
-# versions, this little helper is shorter than having to keep doing not isnan(),
-# plus the double-negative of "not is not a number" is confusing, so this should
-# help with readability.
+
 def _isnum(n):
     return not isnan(n)
 
+
 def plot(series, cfg=None):
-    """Generate an ascii chart for a series of numbers.
-
-    `series` should be a list of ints or floats. Missing data values in the
-    series can be specified as a NaN. In Python versions less than 3.5, use
-    float("nan") to specify an NaN. With 3.5 onwards, use math.nan to specify a
-    NaN.
-
-        >>> series = [1,2,3,4,float("nan"),4,3,2,1]
-        >>> print(plot(series))
-            4.00  ┤  ╭╴╶╮
-            3.00  ┤ ╭╯  ╰╮
-            2.00  ┤╭╯    ╰╮
-            1.00  ┼╯      ╰
-
-    `series` can also be a list of lists to support multiple data series.
-
-        >>> series = [[10,20,30,40,30,20,10], [40,30,20,10,20,30,40]]
-        >>> print(plot(series, {'height': 3}))
-           40.00  ┤╮ ╭╮ ╭
-           30.00  ┤╰╮╯╰╭╯
-           20.00  ┤╭╰╮╭╯╮
-           10.00  ┼╯ ╰╯ ╰
-
-    `cfg` is an optional dictionary of various parameters to tune the appearance
-    of the chart. `min` and `max` will clamp the y-axis and all values:
-
-        >>> series = [1,2,3,4,float("nan"),4,3,2,1]
-        >>> print(plot(series, {'min': 0}))
-            4.00  ┼  ╭╴╶╮
-            3.00  ┤ ╭╯  ╰╮
-            2.00  ┤╭╯    ╰╮
-            1.00  ┼╯      ╰
-            0.00  ┤
-
-        >>> print(plot(series, {'min': 2}))
-            4.00  ┤  ╭╴╶╮
-            3.00  ┤ ╭╯  ╰╮
-            2.00  ┼─╯    ╰─
-
-        >>> print(plot(series, {'min': 2, 'max': 3}))
-            3.00  ┤ ╭─╴╶─╮
-            2.00  ┼─╯    ╰─
-
-    `height` specifies the number of rows the graph should occupy. It can be
-    used to scale down a graph with large data values:
-
-        >>> series = [10,20,30,40,50,40,30,20,10]
-        >>> print(plot(series, {'height': 4}))
-           50.00  ┤   ╭╮
-           40.00  ┤  ╭╯╰╮
-           30.00  ┤ ╭╯  ╰╮
-           20.00  ┤╭╯    ╰╮
-           10.00  ┼╯      ╰
-
-    `format` specifies a Python format string used to format the labels on the
-    y-axis. The default value is "{:8.2f} ". This can be used to remove the
-    decimal point:
-
-        >>> series = [10,20,30,40,50,40,30,20,10]
-        >>> print(plot(series, {'height': 4, 'format':'{:8.0f}'}))
-              50 ┤   ╭╮
-              40 ┤  ╭╯╰╮
-              30 ┤ ╭╯  ╰╮
-              20 ┤╭╯    ╰╮
-              10 ┼╯      ╰
-    """
     if len(series) == 0:
-        return ''
+        return ""
 
     if not isinstance(series[0], list):
         if all(isnan(n) for n in series):
-            return ''
+            return ""
         else:
             series = [series]
 
     cfg = cfg or {}
 
-    minimum = cfg.get('min', min(filter(_isnum, [j for i in series for j in i])))
-    maximum = cfg.get('max', max(filter(_isnum, [j for i in series for j in i])))
+    minimum = cfg.get("min", min(filter(_isnum, [j for i in series for j in i])))
+    maximum = cfg.get("max", max(filter(_isnum, [j for i in series for j in i])))
 
-    default_symbols = ['┼', '┤', '╶', '╴', '─', '╰', '╭', '╮', '╯', '│']
-    symbols = cfg.get('symbols', default_symbols)
+    default_symbols = ["┼", "┤", "╶", "╴", "─", "╰", "╭", "╮", "╯", "│"]
+    symbols = cfg.get("symbols", default_symbols)
 
     if minimum > maximum:
-        raise ValueError('The min value cannot exceed the max value.')
+        raise ValueError("The min value cannot exceed the max value.")
 
     interval = maximum - minimum
-    offset = cfg.get('offset', 3)
-    height = cfg.get('height', interval)
+    offset = cfg.get("offset", 3)
+    height = cfg.get("height", interval)
     ratio = height / interval if interval > 0 else 1
 
     min2 = int(floor(minimum * ratio))
@@ -126,15 +50,19 @@ def plot(series, cfg=None):
         width = max(width, len(series[i]))
     width += offset
 
-    placeholder = cfg.get('format', '{:8.2f} ')
+    placeholder = cfg.get("format", "{:8.2f} ")
 
-    result = [[' '] * width for i in range(rows + 1)]
+    result = [[" "] * width for i in range(rows + 1)]
 
     # axis and labels
     for y in range(min2, max2 + 1):
-        label = placeholder.format(maximum - ((y - min2) * interval / (rows if rows else 1)))
+        label = placeholder.format(
+            maximum - ((y - min2) * interval / (rows if rows else 1))
+        )
         result[y - min2][max(offset - len(label), 0)] = label
-        result[y - min2][offset - 1] = symbols[0] if y == 0 else symbols[1]  # zero tick mark
+        result[y - min2][offset - 1] = (
+            symbols[0] if y == 0 else symbols[1]
+        )  # zero tick mark
 
     # first value is a tick mark across the y-axis
     d0 = series[0][0]
@@ -142,7 +70,6 @@ def plot(series, cfg=None):
         result[rows - scaled(d0)][offset - 1] = symbols[0]
 
     for i in range(0, len(series)):
-
         # plot the line
         for x in range(0, len(series[i]) - 1):
             d0 = series[i][x + 0]
@@ -173,5 +100,4 @@ def plot(series, cfg=None):
             for y in range(start, end):
                 result[rows - y][x + offset] = symbols[9]
 
-    return '\n'.join([''.join(row).rstrip() for row in result])
-
+    return "\n".join(["".join(row).rstrip() for row in result])

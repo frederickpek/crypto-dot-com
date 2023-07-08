@@ -10,15 +10,15 @@ class CdcAsyncClient(CdcClient):
     def __init__(self, api_key: str, secret_key: str):
         CdcClient.__init__(self, api_key, secret_key)
 
-    async def request(self, method: str, endpoint: str, params: dict=None) -> dict:
+    async def request(self, method: str, endpoint: str, params: dict = None) -> dict:
         if method not in (GET, POST):
-            raise ValueError('Only GET and POST operations supported.')
+            raise ValueError("Only GET and POST operations supported.")
         try:
             params = params or {}
             async with aiohttp.ClientSession() as session:
                 if method == GET:
                     query_params = get_params_to_str(params)
-                    url = BASE_URL + endpoint + '?' + query_params
+                    url = BASE_URL + endpoint + "?" + query_params
                     async with session.get(url) as resp:
                         resp = await resp.json()
                         return resp
@@ -31,4 +31,3 @@ class CdcAsyncClient(CdcClient):
         except Exception:
             pass
         return dict()
-
