@@ -62,7 +62,8 @@ def lambda_handler(event, context):
 
     user_balance_history.sort(key=lambda d: d['t'])
     points = list(map(lambda d: float(d['c']), user_balance_history))
-    chart = gen_ascii_plot(points=points[-33:])
+    points.append(total_cash_balance)
+    chart = gen_ascii_plot(points=points[-24:])
     curr_balance = f'Exch Balance: ${total_cash_balance:,.2f}'
 
     time_fmt = "%d %B %Y, %H:%M %p"
