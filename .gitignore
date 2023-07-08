@@ -161,3 +161,5 @@ cython_debug/
 
 # api key and secret keys
 crypto_dot_com/secret/__init__.py
+
+.pre-commit-config.yaml
