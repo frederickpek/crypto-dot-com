@@ -30,6 +30,11 @@ def lambda_handler(event, context):
     total_cash_balance = float(user_balance["total_cash_balance"])
     position_balances = user_balance["position_balances"]
 
+    # filter low balance coins
+    position_balances = list(
+        filter(lambda p: float(p["market_value"]) > 10, position_balances)
+    )
+
     m = {"5m": 5, "1h": 60, "6h": 60 * 6, "24h": 60 * 24}
 
     async def update_price_changes(position_balance: dict):
@@ -68,7 +73,7 @@ def lambda_handler(event, context):
     user_balance_history.sort(key=lambda d: d["t"])
     points = list(map(lambda d: float(d["c"]), user_balance_history))
     points.append(total_cash_balance)
-    chart = gen_ascii_plot(points=points[-24:])
+    chart = gen_ascii_plot(points=points[-33:])
     curr_balance = f"Exch Balance: ${total_cash_balance:,.2f}"
 
     time_fmt = "%d %B %Y, %H:%M %p"
