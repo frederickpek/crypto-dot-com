@@ -6,6 +6,7 @@ from crypto_dot_com.consts import (
     POSITIONS,
     GET_TICKERS,
     GET_CANDLESTICK,
+    OPEN_ORDERS,
 )
 from crypto_dot_com.sdk.client import CdcClient
 
@@ -69,4 +70,11 @@ class CdcApi(CdcClient):
         if end_ts:
             params["end_ts"] = end_ts
         response = self.request(method=GET, endpoint=GET_CANDLESTICK, params=params)
+        return response["result"]["data"]
+
+    def get_open_orders(self, instrument_name: str = None) -> list[dict]:
+        params = dict()
+        if instrument_name:
+            params["instrument_name"] = instrument_name
+        response = self.request(method=POST, endpoint=OPEN_ORDERS, params=params)
         return response["result"]["data"]

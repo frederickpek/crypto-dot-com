@@ -6,6 +6,7 @@ from crypto_dot_com.consts import (
     POSITIONS,
     GET_TICKERS,
     GET_CANDLESTICK,
+    OPEN_ORDERS,
 )
 from crypto_dot_com.sdk.async_client import CdcAsyncClient
 
@@ -76,4 +77,11 @@ class CdcAsyncApi(CdcAsyncClient):
         response = await self.request(
             method=GET, endpoint=GET_CANDLESTICK, params=params
         )
+        return response["result"]["data"]
+
+    async def get_open_orders(self, instrument_name: str = None) -> list[dict]:
+        params = dict()
+        if instrument_name:
+            params["instrument_name"] = instrument_name
+        response = await self.request(method=POST, endpoint=OPEN_ORDERS, params=params)
         return response["result"]["data"]
