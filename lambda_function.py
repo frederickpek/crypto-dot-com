@@ -9,21 +9,29 @@ from zoneinfo import ZoneInfo
 from crypto_dot_com.sdk.async_api import CdcAsyncApi
 from crypto_dot_com.secret import API_KEY, SECRET_KEY
 from crypto_dot_com.utils.ascii_chart import gen_ascii_plot
+from crypto_dot_com.utils.ticker import get_yfinance_ticker_price
 from crypto_dot_com.utils.telegram_bot import telegram_bot_sendtext
 
 
-def lambda_handler(event, context):
+def lambda_handler(event=None, context=None):
     start_time = time.time()
     api = CdcAsyncApi(api_key=API_KEY, secret_key=SECRET_KEY)
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    user_balance_history, user_balance, tickers, open_orders = loop.run_until_complete(
+    (
+        user_balance_history,
+        user_balance,
+        tickers,
+        open_orders,
+        sgd_usd,
+    ) = loop.run_until_complete(
         asyncio.gather(
             api.get_user_balance_history(timeframe="H1", limit=40),
             api.get_user_balance(),
             api.get_tickers(),
             api.get_open_orders(),
+            get_yfinance_ticker_price(ticker="SGDUSD=X"),
         )
     )
 
@@ -85,6 +93,8 @@ def lambda_handler(event, context):
         )
     )
 
+    sgd_cash_balance = total_cash_balance / sgd_usd
+
     # open orders
     if open_orders:
         orders_df = pd.DataFrame(open_orders)
@@ -113,9 +123,14 @@ def lambda_handler(event, context):
     points = list(map(lambda d: float(d["c"]), user_balance_history))
     points.append(total_cash_balance)
     chart = gen_ascii_plot(points=points[-33:])
-    curr_balance = f"Exch Balance: ${total_cash_balance:,.2f}"
+    balances = pd.Series(
+        data={
+            "Exch Balance:": f"${total_cash_balance:,.2f}",
+            " Sgd Balance:": f"${sgd_cash_balance:,.2f}",
+        }
+    ).to_string()
 
-    time_fmt = "%d %B %Y, %H:%M %p"
+    time_fmt = " %d %B %Y, %H:%M %p"
     time_zone = ZoneInfo("Asia/Singapore")
     dt = datetime.now(tz=time_zone).strftime(time_fmt)
     bal_table = bal_df.to_string(index=False).replace("_", "-")
@@ -124,7 +139,7 @@ def lambda_handler(event, context):
     duration = f"[Finished in {end_time - start_time:,.3f}s]"
 
     delimiter = "\n\n"
-    msg = f"{delimiter.join([dt, bal_table, curr_balance, chart])}"
+    msg = f"{delimiter.join([dt, bal_table, balances, chart])}"
     if orders_table:
         msg += delimiter + orders_table
     msg = "```" + msg + delimiter + duration + "```"
@@ -132,3 +147,7 @@ def lambda_handler(event, context):
     resp = telegram_bot_sendtext(msg)
 
     return {"statusCode": 200, "body": json.dumps(resp)}
+
+
+if __name__ == "__main__":
+    lambda_handler()
