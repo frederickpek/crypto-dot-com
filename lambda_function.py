@@ -1,6 +1,7 @@
 import json
 import time
 import asyncio
+import traceback
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -13,7 +14,7 @@ from crypto_dot_com.utils.ticker import get_yfinance_ticker_price
 from crypto_dot_com.utils.telegram_bot import telegram_bot_sendtext
 
 
-def lambda_handler(event=None, context=None):
+def main():
     start_time = time.time()
     api = CdcAsyncApi(api_key=API_KEY, secret_key=SECRET_KEY)
 
@@ -147,6 +148,15 @@ def lambda_handler(event=None, context=None):
     resp = telegram_bot_sendtext(msg)
 
     return {"statusCode": 200, "body": json.dumps(resp)}
+
+
+def lambda_handler(event=None, context=None):
+    try:
+        return main()
+    except Exception as err:
+        err_msg = f"{err}\n{traceback.format_exc()}"
+        telegram_bot_sendtext(err_msg)
+    return {"statusCode": 500}
 
 
 if __name__ == "__main__":

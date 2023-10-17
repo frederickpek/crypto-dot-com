@@ -40,7 +40,7 @@ class CdcAsyncApi(CdcAsyncClient):
         response = await self.request(
             method=POST, endpoint=USER_BALANCE_HISTORY, params=params
         )
-        return response["result"]["data"]
+        return response.get("result", {}).get("data", [])
 
     async def get_positions(self, instrument_name: str = None) -> list[dict]:
         params = dict()
