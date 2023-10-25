@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from functools import lru_cache
 
 from crypto_dot_com.sdk.async_api import CdcAsyncApi
 from crypto_dot_com.secret import API_KEY, SECRET_KEY
@@ -40,6 +41,7 @@ def main():
     total_cash_balance = float(user_balance["total_cash_balance"])
     position_balances = user_balance["position_balances"]
 
+    @lru_cache
     def get_spot_price(ccy):
         ticker = (
             tickers_map.get(f"{ccy}_USDT")
@@ -73,17 +75,21 @@ def main():
     async def update_price_changes(position_balance: dict):
         ccy = position_balance["ccy"]
         ticker = tickers_map.get(f"{ccy}_USDT") or tickers_map.get(f"{ccy}_USD")
-        if ticker:
-            price, instrument_name = get_spot_price(ccy)
-            candlesticks = await api.get_candlestick(
-                instrument_name, timeframe="5m", count=300
-            )
-            candlesticks.sort(reverse=True, key=lambda d: d["t"])
-            base_interval = 5
-            for key, interval in m.items():
-                open_price = float(candlesticks[interval // base_interval]["o"])
-                percentage = (price - open_price) / price * 100
-                position_balance[key] = f"{percentage:,.1f}"
+        price, instrument_name = get_spot_price(ccy)
+        position_balance["price"] = price
+        portfolio_percentage = position_balance["notional"] / total_cash_balance * 100
+        position_balance["percentage"] = f"{portfolio_percentage:,.2f}"
+        if not ticker:
+            return
+        candlesticks = await api.get_candlestick(
+            instrument_name, timeframe="5m", count=300
+        )
+        candlesticks.sort(reverse=True, key=lambda d: d["t"])
+        base_interval = 5
+        for key, interval in m.items():
+            open_price = float(candlesticks[interval // base_interval]["o"])
+            percentage = (price - open_price) / price * 100
+            position_balance[key] = f"{percentage:,.1f}"
 
     loop.run_until_complete(
         asyncio.gather(
@@ -117,8 +123,10 @@ def main():
     bal_df = pd.DataFrame(position_balances)
     bal_df = bal_df.sort_values(by=["notional"], ascending=False)
     bal_df["notional"] = bal_df["notional"].map(lambda v: f"${v:,.2f}")
-    bal_df = bal_df[["ccy", "notional", *m.keys()]]
-    bal_df = bal_df.replace(np.nan, "")
+    bal_df["price"] = bal_df["price"].map(lambda v: f"${v:,.2f}")
+    price_df = bal_df[["ccy", "price", *m.keys()]]
+    price_df = price_df.dropna()
+    bal_df = bal_df[["ccy", "notional", "percentage"]]
 
     user_balance_history.sort(key=lambda d: d["t"])
     points = list(map(lambda d: float(d["c"]), user_balance_history))
@@ -134,13 +142,14 @@ def main():
     time_fmt = " %d %B %Y, %H:%M %p"
     time_zone = ZoneInfo("Asia/Singapore")
     dt = datetime.now(tz=time_zone).strftime(time_fmt)
-    bal_table = bal_df.to_string(index=False).replace("_", "-")
+    bal_table = bal_df.to_string(index=False)
+    price_table = price_df.to_string(index=False)
 
     end_time = time.time()
     duration = f"[Finished in {end_time - start_time:,.3f}s]"
 
     delimiter = "\n\n"
-    msg = f"{delimiter.join([dt, bal_table, balances, chart])}"
+    msg = f"{delimiter.join([dt, bal_table, balances, chart, price_table])}"
     if orders_table:
         msg += delimiter + orders_table
     msg = "```" + msg + delimiter + duration + "```"
