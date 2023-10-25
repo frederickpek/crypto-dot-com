@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from functools import lru_cache
 
 from crypto_dot_com.sdk.async_api import CdcAsyncApi
 from crypto_dot_com.secret import API_KEY, SECRET_KEY
@@ -41,7 +40,6 @@ def main():
     total_cash_balance = float(user_balance["total_cash_balance"])
     position_balances = user_balance["position_balances"]
 
-    @lru_cache
     def get_spot_price(ccy):
         ticker = (
             tickers_map.get(f"{ccy}_USDT")
