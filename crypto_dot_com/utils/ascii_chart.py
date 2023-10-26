@@ -4,11 +4,11 @@ from crypto_dot_com.asciichartpy import plot
 MAX_HEIGHT = 12
 
 
-def gen_ascii_plot(points: List[float]) -> str:
+def gen_ascii_plot(points: List[float], height=MAX_HEIGHT) -> str:
     output = plot(
         series=points,
         cfg={
-            "height": MAX_HEIGHT,
+            "height": height,
             "offset": 1,
         },
     )
