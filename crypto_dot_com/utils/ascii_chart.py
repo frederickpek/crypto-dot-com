@@ -18,8 +18,10 @@ def gen_ascii_plot(points: List[float], height=MAX_HEIGHT) -> str:
     for i in range(1, n // interval + 1):
         x_axis += "{: >{}}".format(str(i * interval)[::-1], interval)
     output += "\n" + "{: >{}}".format(x_axis[::-1], n)
-    output += f"\nMin: ${min(points):,.2f}"
-    output += f"\nMax: ${max(points):,.2f}"
+    min_value = min(points)
+    max_value = max(points)
+    percentage_diff = (max_value - min_value) / min_value * 100
+    output += f"\n${min_value:,.2f} - ${max_value:,.2f} (%{percentage_diff:.2f})"
     return output
 
 
