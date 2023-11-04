@@ -65,14 +65,15 @@ def main():
             instrument_name = position_balance["instrument_name"]
             price = get_spot_price(instrument_name)
             position_balance["notional"] = quantity * price
+            position_balance["price"] = price
         bal_df = pd.DataFrame(position_balances)
         bal_df = bal_df[bal_df["notional"] > 10]
         bal_df = bal_df.sort_values(by=["notional"], ascending=False)
-        bal_df["notional (USD)"] = bal_df["notional"].map(lambda v: f"${v:,.2f}")
         bal_df["notional (SGD)"] = bal_df["notional"].map(
-            lambda v: f"${v / sgd_usd:,.2f}"
+            lambda x: f"${x / sgd_usd:,.2f}"
         )
-        bal_df = bal_df[["ccy", "notional (USD)", "notional (SGD)"]]
+        bal_df["price (SGD)"] = bal_df["price"].map(lambda x: f"${x / sgd_usd:,.2f}")
+        bal_df = bal_df[["ccy", "price (SGD)", "notional (SGD)"]]
         bal_dfs.append((acct_id, bal_df))
 
     time_fmt = " %d %B %Y, %H:%M %p"
