@@ -88,9 +88,12 @@ def main():
     end_time = time.time()
     duration = f"[Finished in {end_time - start_time:,.3f}s]"
     msg = delimiter.join([dt, bal_tables, duration])
-    resp = telegram_bot_sendtext("```" + msg + "```")
 
-    return {"statusCode": 200, "body": json.dumps(resp)}
+    for keys in SUB_ACCT_KEYS.values():
+        tele_chat_id = keys["TELE_CHAT_ID"]
+        telegram_bot_sendtext("```" + msg + "```", chat_id=tele_chat_id)
+
+    return {"statusCode": 200}
 
 
 def lambda_handler(event=None, context=None):
