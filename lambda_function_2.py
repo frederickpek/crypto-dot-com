@@ -7,7 +7,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from crypto_dot_com.sdk.async_api import CdcAsyncApi
-from crypto_dot_com.secret import SUB_ACCT_KEYS
+from crypto_dot_com.secret import SUB_ACCT_KEYS, SUB_ACCT_TELE_CHAT_IDS
 from crypto_dot_com.utils.ticker import get_yfinance_ticker_price
 from crypto_dot_com.utils.telegram_bot import telegram_bot_sendtext
 
@@ -89,9 +89,8 @@ def main():
     duration = f"[Finished in {end_time - start_time:,.3f}s]"
     msg = delimiter.join([dt, bal_tables, duration])
 
-    for keys in SUB_ACCT_KEYS.values():
-        tele_chat_id = keys["TELE_CHAT_ID"]
-        telegram_bot_sendtext("```" + msg + "```", chat_id=tele_chat_id)
+    for chat_id in SUB_ACCT_TELE_CHAT_IDS:
+        telegram_bot_sendtext("```" + msg + "```", chat_id=chat_id)
 
     return {"statusCode": 200}
 
