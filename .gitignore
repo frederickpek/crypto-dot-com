@@ -160,5 +160,5 @@ cython_debug/
 #.idea/
 
 # api key and secret keys
-crypto_dot_com/secret/__init__.py
-temp.py
+*/secret.py
+*temp.py

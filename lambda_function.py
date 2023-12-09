@@ -2,7 +2,6 @@ import json
 import time
 import asyncio
 import traceback
-import numpy as np
 import pandas as pd
 from datetime import datetime
 from zoneinfo import ZoneInfo
