@@ -76,7 +76,7 @@ def main():
         price, instrument_name = get_spot_price(ccy)
         position_balance["price"] = price
         portfolio_percentage = position_balance["notional"] / total_cash_balance * 100
-        position_balance["percentage"] = f"{portfolio_percentage:,.2f}"
+        position_balance["pct"] = f"{portfolio_percentage:,.2f}%"
         if not ticker:
             return
         candlesticks = await api.get_candlestick(
@@ -122,9 +122,14 @@ def main():
     bal_df = bal_df.sort_values(by=["notional"], ascending=False)
     bal_df["notional"] = bal_df["notional"].map(lambda v: f"${v:,.2f}")
     bal_df["price"] = bal_df["price"].map(lambda v: f"${v:,.2f}")
-    price_df = bal_df[["ccy", "price", *m.keys()]]
+    bal_df["qty"] = bal_df["quantity"].map(lambda v: f"{float(v):,.2f}")
+    bal_df = bal_df[["ccy", "notional", "qty", "pct"]]
+
+    price_df = pd.DataFrame(position_balances)
     price_df = price_df.dropna()
-    bal_df = bal_df[["ccy", "notional", "percentage"]]
+    price_df = price_df.sort_values(by=["price"])
+    price_df["price"] = price_df["price"].map(lambda v: f"${v:,.2f}")
+    price_df = price_df[["ccy", "price", *m.keys()]]
 
     user_balance_history.sort(key=lambda d: d["t"])
     points = list(map(lambda d: float(d["c"]), user_balance_history))
