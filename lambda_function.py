@@ -7,27 +7,36 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from crypto_dot_com.sdk.async_api import CdcAsyncApi
-from crypto_dot_com.secret import API_KEY, SECRET_KEY
+from crypto_dot_com.secret import (
+    API_KEY,
+    SECRET_KEY,
+    SPREADSHEET_ID,
+)
+
 from crypto_dot_com.utils.ascii_chart import gen_ascii_plot
 from crypto_dot_com.utils.ticker import get_yfinance_ticker_price
 from crypto_dot_com.utils.telegram_bot import telegram_bot_sendtext
+from crypto_dot_com.utils.GoogleSheetsClient import GoogleSheetsClient
+
+GSDB_CDC_EXCHANGE_BALANCE_CELL = "B4"
 
 
 def main():
     start_time = time.time()
     api = CdcAsyncApi(api_key=API_KEY, secret_key=SECRET_KEY)
+    gsdb = GoogleSheetsClient(
+        "./crypto_dot_com/credentials.json", spreadsheet_id=SPREADSHEET_ID
+    )
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     (
-        user_balance_history,
         user_balance,
         tickers,
         open_orders,
         sgd_usd,
     ) = loop.run_until_complete(
         asyncio.gather(
-            api.get_user_balance_history(timeframe="H1", limit=40),
             api.get_user_balance(),
             api.get_tickers(),
             api.get_open_orders(),
@@ -117,23 +126,40 @@ def main():
     else:
         orders_table = None
 
+    # balances breakdown
     bal_df = pd.DataFrame(position_balances)
     bal_df = bal_df.sort_values(by=["notional"], ascending=False)
     bal_df["notional"] = bal_df["notional"].map(lambda v: f"${v:,.2f}")
     bal_df["price"] = bal_df["price"].map(lambda v: f"${v:,.2f}")
     bal_df["qty"] = bal_df["quantity"].map(lambda v: f"{float(v):,.2f}")
     bal_df = bal_df[["ccy", "notional", "qty", "pct"]]
+    bal_table = bal_df.to_string(index=False)
 
+    # prices
     price_df = pd.DataFrame(position_balances)
     price_df = price_df.dropna()
     price_df = price_df.sort_values(by=["price"])
     price_df["price"] = price_df["price"].map(lambda v: f"${v:,.2f}")
     price_df = price_df[["ccy", "price", *m.keys()]]
+    price_table = price_df.to_string(index=False)
 
-    user_balance_history.sort(key=lambda d: d["t"])
-    points = list(map(lambda d: float(d["c"]), user_balance_history))
-    points.append(total_cash_balance)
-    chart = gen_ascii_plot(points=points[-33:])
+    # chart
+    max_num_points = 33
+    ts_now = datetime.now().replace(minute=0, second=0, microsecond=0).timestamp()
+    point_now = {str(int(ts_now)): total_cash_balance}
+    time_series: dict = json.loads(gsdb.get_cell(GSDB_CDC_EXCHANGE_BALANCE_CELL))
+    time_series.update(point_now)
+    time_series_list = [(ts, bal) for ts, bal in time_series.items()]
+    time_series_list.sort(key=lambda x: x[0])
+    time_series_list = time_series_list[-max_num_points:]
+    points = list(map(lambda x: x[1], time_series_list))
+    chart = gen_ascii_plot(points=points)
+
+    # save data
+    series_dict = {ts: bal for ts, bal in time_series_list}
+    gsdb.update_cell(GSDB_CDC_EXCHANGE_BALANCE_CELL, json.dumps(series_dict))
+
+    # balances
     balances = pd.Series(
         data={
             "Exch Balance:": f"${total_cash_balance:,.2f}",
@@ -144,8 +170,6 @@ def main():
     time_fmt = " %d %B %Y, %H:%M %p"
     time_zone = ZoneInfo("Asia/Singapore")
     dt = datetime.now(tz=time_zone).strftime(time_fmt)
-    bal_table = bal_df.to_string(index=False)
-    price_table = price_df.to_string(index=False)
 
     end_time = time.time()
     duration = f"[Finished in {end_time - start_time:,.3f}s]"
