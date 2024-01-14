@@ -17,6 +17,7 @@ from crypto_dot_com.utils.ascii_chart import gen_ascii_plot
 from crypto_dot_com.utils.ticker import get_yfinance_ticker_price
 from crypto_dot_com.utils.telegram_bot import telegram_bot_sendtext
 from crypto_dot_com.utils.GoogleSheetsClient import GoogleSheetsClient
+from crypto_dot_com.utils.price_alert import alert_price_changes
 
 GSDB_CDC_EXCHANGE_BALANCE_CELL = "B4"
 
@@ -76,6 +77,7 @@ def main():
     # filter low balance coins
     position_balances = list(filter(lambda p: p["notional"] > 10, position_balances))
 
+    ccy_candlesticks = {}
     m = {"5m": 5, "1h": 60, "6h": 60 * 6, "24h": 60 * 24}
 
     async def update_price_changes(position_balance: dict):
@@ -90,6 +92,7 @@ def main():
         candlesticks = await api.get_candlestick(
             instrument_name, timeframe="5m", count=300
         )
+        ccy_candlesticks[ccy] = candlesticks
         candlesticks.sort(reverse=True, key=lambda d: d["t"])
         base_interval = 5
         for key, interval in m.items():
@@ -181,6 +184,8 @@ def main():
     msg = "```" + msg + delimiter + duration + "```"
 
     resp = telegram_bot_sendtext(msg)
+
+    alert_price_changes(ccy_candlesticks)
 
     return {"statusCode": 200, "body": json.dumps(resp)}
 
