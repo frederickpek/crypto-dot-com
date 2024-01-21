@@ -7,6 +7,9 @@ from crypto_dot_com.consts import (
     GET_TICKERS,
     GET_CANDLESTICK,
     OPEN_ORDERS,
+    CREATE_ORDER,
+    GET_ORDER_DETAIL,
+    GET_INSTRUMENTS,
 )
 from crypto_dot_com.sdk.client import CdcClient
 
@@ -77,4 +80,69 @@ class CdcApi(CdcClient):
         if instrument_name:
             params["instrument_name"] = instrument_name
         response = self.request(method=POST, endpoint=OPEN_ORDERS, params=params)
+        return response["result"]["data"]
+
+    def create_order(
+        self,
+        instrument_name: str,
+        side: str,
+        order_type: str,
+        quantity: str,
+        price: str = None,
+        client_oid: str = None,
+        exec_inst: list[str] = None,
+        time_in_force: str = None,
+        ref_price: str = None,
+        ref_price_type: str = None,
+        spot_margin: str = None,
+    ) -> dict:
+        """
+        Name                Type        Required    Description
+        instrument_name     string      Y           e.g. BTCUSD-PERP
+        side                string      Y           BUY, SELL
+        type                string      Y           LIMIT, MARKET, STOP_LOSS, STOP_LIMIT, TAKE_PROFIT, TAKE_PROFIT_LIMIT
+        price               string      Y           Price
+        quantity            string      Y           Order Quantity
+        client_oid          string      N           Client Order ID
+        exec_inst           string      N           ["POST_ONLY"]
+        time_in_force       string      N           GOOD_TILL_CANCEL, IMMEDIATE_OR_CANCEL, FILL_OR_KILL
+        ref_price           string      N*          Trigger price required for STOP_LOSS, STOP_LIMIT, TAKE_PROFIT, TAKE_PROFIT_LIMIT order type
+        ref_price_type      string      N           which price to use for ref_price: MARK_PRICE (default), INDEX_PRICE, LAST_PRICE
+        spot_margin         string      N           SPOT: non-margin order, MARGIN: margin order
+        """
+        params = dict()
+        params["instrument_name"] = instrument_name
+        params["side"] = side
+        params["type"] = order_type
+        params["quantity"] = quantity
+        if price:
+            params["price"] = price
+        if client_oid:
+            params["client_oid"] = client_oid
+        if exec_inst:
+            params["exec_inst"] = exec_inst
+        if time_in_force:
+            params["time_in_force"] = time_in_force
+        if ref_price:
+            params["ref_price"] = ref_price
+        if ref_price_type:
+            params["ref_price_type"] = ref_price_type
+        if spot_margin:
+            params["spot_margin"] = spot_margin
+        response = self.request(method=POST, endpoint=CREATE_ORDER, params=params)
+        return response["result"]
+
+    def get_order_detail(self, order_id: str = None, client_oid: str = None) -> dict:
+        if not order_id and not client_oid:
+            raise ValueError("Either order_id or client_oid must be specified.")
+        params = dict()
+        if order_id:
+            params["order_id"] = order_id
+        if client_oid:
+            params["client_oid"] = client_oid
+        response = self.request(method=POST, endpoint=GET_ORDER_DETAIL, params=params)
+        return response.get("result", {})
+
+    def get_instruments(self) -> list[dict]:
+        response = self.request(method=GET, endpoint=GET_INSTRUMENTS)
         return response["result"]["data"]
