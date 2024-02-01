@@ -96,7 +96,9 @@ def main():
         candlesticks.sort(reverse=True, key=lambda d: d["t"])
         base_interval = 5
         for key, interval in m.items():
-            open_price = float(candlesticks[interval // base_interval]["o"])
+            index = interval // base_interval
+            index = index if index < len(candlesticks) else -1
+            open_price = float(candlesticks[index]["o"])
             percentage = (price - open_price) / price * 100
             position_balance[key] = f"{percentage:,.1f}"
 
