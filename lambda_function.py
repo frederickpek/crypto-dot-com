@@ -75,7 +75,7 @@ def main():
     )
 
     # filter low balance coins
-    position_balances = list(filter(lambda p: p["notional"] > 10, position_balances))
+    position_balances = list(filter(lambda p: p["notional"] > 3, position_balances))
 
     ccy_candlesticks = {}
     m = {"5m": 5, "1h": 60, "6h": 60 * 6, "24h": 60 * 24}
